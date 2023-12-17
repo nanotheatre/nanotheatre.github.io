@@ -33,13 +33,6 @@ var e,Attraction,Behaviour,Collision,ConstantForce,EdgeBounce,EdgeWrap,Euler,Imp
 
               var rtime;var timeout = false;var delta = 200;addEventListener("resize", (event) => {rtime = new Date();if (timeout === false) {document.getElementsByTagName('canvas')[0].style.visibility = 'hidden';timeout = true;setTimeout(resizeend, delta);}});function resizeend() {if (new Date() - rtime < delta) {setTimeout(resizeend, delta);} else {timeout = false;window.location.reload();}}
 
-              var h = window.innerHeight;
-              console.log(h);
-              //var d = 10 + (h / 200)
-              //var t = (h * d / 100);
-              //console.log(d);
-              //document.getElementsByTagName('canvas')[0].style.backgroundPosition = "calc(50% + 10px) "+t+"px"
-
           </script>
         </body>
       </html>
