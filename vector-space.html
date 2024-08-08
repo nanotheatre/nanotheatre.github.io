@@ -12,7 +12,11 @@
                 <div id="visio" class="position-absolute" style="left: 0; top: 0; right: 0; bottom: 0;"></div>
                 <script type="text/javascript" src="vector-space.js"></script>
                 <script type="text/javascript">
-                    InitVisionneuse('')
+                        var url_string = window.location; 
+                        var url = new URL(url_string);
+                        var c = url.searchParams.get("artefact");
+                        console.log(c);                        
+                        InitVisionneuse(c)
                 </script>
             </body>
         </html>
