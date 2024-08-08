@@ -18,6 +18,8 @@ function InitVisionneuse(Source){
       zoomInButton:   "zoom-plus",
       zoomOutButton:  "zoom-moins",*/
     showNavigationControl: false,
+    showZoomControl: false,
+    showFullPageControl: false,
       showHomeControl: false,
       autoHideControls: false,
       immediateRender: true,
