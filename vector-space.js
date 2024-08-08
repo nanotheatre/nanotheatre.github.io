@@ -17,6 +17,7 @@ function InitVisionneuse(Source){
       fullPageButton: "plein-ecran",
       zoomInButton:   "zoom-plus",
       zoomOutButton:  "zoom-moins",*/
+    showNavigationControl: false,
       showHomeControl: false,
       autoHideControls: false,
       immediateRender: true,
