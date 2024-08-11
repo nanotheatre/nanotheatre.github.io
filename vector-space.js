@@ -35,8 +35,36 @@ function InitVisionneuse(Source){
       },
       showSequenceControl: false,
       springStiffness: 4,
-      animationTime: 0
+      animationTime: 0,
+      /*overlays: [{
+        id: 'test',
+        px: 0.1,
+        py: 0.1,
+        width: 1,
+        placement: 'RIGHT',
+        checkResize: false
+      }],*/
   });
+
+// Assuming 'viewer' is your OpenSeadragon viewer instance
+Visionneuse.addHandler('open', function() {
+
+    var tiledImage = Visionneuse.world.getItemAt(0);
+    var imageSize = tiledImage.getContentSize();
+    var aspectRatio = imageSize.y / imageSize.x;
+    var overlayElement = document.createElement('div');
+    overlayElement.className = 'bordure';
+
+    var rect = new OpenSeadragon.Rect(0, 0, 1, aspectRatio);
+
+    Visionneuse.addOverlay({
+        element: overlayElement,
+        location: rect,
+        checkResize: false  
+    });
+  
+});
+
 
   var isFullyLoaded = false;
 
@@ -78,9 +106,9 @@ function InitVisionneuse(Source){
   function ChangementPleinEcran(eventSource, fullScreen, userData){
     var courant = Visionneuse.currentPage();
     if(eventSource.fullScreen){
-      $('.openseadragon-container').hide().css('background','#717376')
+      $('.openseadragon-container').hide().css('background',Fond)
     }else{
-      $('.openseadragon-container').hide().css('background','#717376')
+      $('.openseadragon-container').hide().css('background',Fond)
     }
     window.setTimeout(function(){
       $('.openseadragon-container').show()
