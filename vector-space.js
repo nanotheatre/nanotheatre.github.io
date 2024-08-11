@@ -77,6 +77,14 @@ function InitVisionneuse(Source){
   /* Au changement de mode plein écran */
   function ChangementPleinEcran(eventSource, fullScreen, userData){
     var courant = Visionneuse.currentPage();
+    if(eventSource.fullScreen){
+      $('.openseadragon-container').hide().css('background','#717376')
+    }else{
+      $('.openseadragon-container').hide().css('background','#717376')
+    }
+    window.setTimeout(function(){
+      $('.openseadragon-container').show()
+    },500)
     //MenuVisio.insertAfter($('#visio'));
   }
 
