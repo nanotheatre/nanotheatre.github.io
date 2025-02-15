@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html dir="ltr" lang="fr-FR">
+   <head>
+      <meta charset="utf-8">
+      <title></title>
+      <style>
+         .openseadragon-canvas { background: #fff !important;  }
+      </style>
+   </head>
+   <body style="font-family: sans-serif;">
+    <div id="v" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0;">
+     
+    </div>
+    <script type="text/javascript" src="openseadragon.min.js"></script>
+    <script type="text/javascript">
+
+      var im = window.location.search.replace(/\?/,'');
+      
+      var Visionneuse = OpenSeadragon({
+         id: "v",
+         prefixUrl: "http://jccarius.art/V/images/",
+         tileSources: [
+            {"type":"image","url":"http://jccarius.art/OE/Schemas/x2000/"+im+"-x2000.png"}
+         ],
+         sequenceMode: false,
+         viewportMargins: {left: 20, top: 20, right: 20, bottom: 20}, 
+         showNavigationControl: false,        
+         showZoomControl: false,
+         showSequenceontrol: false,
+     });
+    </script>
+   </body>
+</html>
