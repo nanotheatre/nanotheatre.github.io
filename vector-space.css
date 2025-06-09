@@ -33,7 +33,7 @@
   
 
 .bordure {
-    border: 1px solid #ccc;
-    box-shadow: 2px 3px 4px 1px #ddd;
+    border: 1px none #ccc;
+    box-shadow: 2px 3px 4px 1px #fff0;
 
 }
