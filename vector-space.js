@@ -26,7 +26,7 @@ function InitVisionneuse(Source){
       preload: true,
       imageSmoothingEnabled: true,
       //maxZoomPixelRatio: 0.5,
-      minZoomImageRatio: 0.8,
+      minZoomImageRatio: 0.5,
       //maxZoomLevel: 1,
       defaultZoomLevel: 0,
       viewportMargins: {top: 15, bottom: 15, left: 15, right: 15},
