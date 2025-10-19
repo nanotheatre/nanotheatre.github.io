@@ -1,0 +1,16 @@
+<svg id="svg890" width="132.77mm" height="149.55mm" version="1.1" viewBox="0 0 132.77 149.55" xmlns="http://www.w3.org/2000/svg" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" style="background: #eee;">
+ 
+
+ <defs>
+    <style>
+        circle { stroke: #d00d; fill: none; animation: hideshow 5s ease infinite; }
+        @keyframes hideshow {
+          0% { opacity: 0.5; }
+          10% { opacity: 1; }
+          15% { opacity: 0.5; }
+          100% { opacity: 0; }
+        } 
+    </style>
+ </defs>
+ <circle cx="50" cy="50" r="40" />
+ </svg>
