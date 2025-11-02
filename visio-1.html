@@ -49,7 +49,9 @@
       return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       }
 
-      var im = window.location.search.replace(/\?/,'');      
+      var im = window.location.search.replace(/\?/,'');  
+
+       alert(estMobile)
 
       if(estMobile){
          const elementV = document.getElementById('v');
