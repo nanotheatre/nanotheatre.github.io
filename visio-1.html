@@ -45,23 +45,37 @@
     <script type="text/javascript" src="biblio/openseadragon.min.js"></script>
     <script type="text/javascript">
 
-      var im = window.location.search.replace(/\?/,'');
-      
-      var Visionneuse = OpenSeadragon({
-         id: "v",
-         prefixUrl: "http://jccarius.art/V/images/",
-         tileSources: [
-            {"type":"image","url":"http://jccarius.art/OE/Schemas/x2000/"+im+"-x2000.png"}
-         ],
-         sequenceMode: false,
-         viewportMargins: {left: 20, top: 20, right: 20, bottom: 20}, 
-         showNavigationControl: false,        
-         showZoomControl: false,
-         showSequenceontrol: false,
-         fullPageButton: "plein-ecran",
-         zoomInButton:   "zoom-plus",
-         zoomOutButton:  "zoom-moins",
-     });
+      function estMobile() {
+      return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      }
+
+      var im = window.location.search.replace(/\?/,'');      
+
+      if(estMobile){
+         const elementV = document.getElementById('v');
+         const nouvelleImage = document.createElement('img');
+         nouvelleImage.src = "http://jccarius.art/OE/Schemas/x2000/"+im+"-x2000.png";
+         elementV.replaceWith(nouvelleImage);         
+      }else {
+
+         var Visionneuse = OpenSeadragon({
+            id: "v",
+            prefixUrl: "http://jccarius.art/V/images/",
+            tileSources: [
+               {"type":"image","url":"http://jccarius.art/OE/Schemas/x2000/"+im+"-x2000.png"}
+            ],
+            sequenceMode: false,
+            viewportMargins: {left: 20, top: 20, right: 20, bottom: 20}, 
+            showNavigationControl: false,        
+            showZoomControl: false,
+            showSequenceontrol: false,
+            fullPageButton: "plein-ecran",
+            zoomInButton:   "zoom-plus",
+            zoomOutButton:  "zoom-moins",
+         });
+
+      }
+
     </script>
    </body>
 </html>
