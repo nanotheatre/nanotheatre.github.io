@@ -257,6 +257,20 @@ document.addEventListener('mouseup', function() {
 el('btn-fit').addEventListener('click', function() { fit(); });
 el('btn-reset').addEventListener('click', function() { scale = 1; panX = panY = 0; applyTransform(); });
 
+// ── Navigation clavier ────────────────────────────────────────
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'ArrowLeft') {
+    var prev = el('btn-prev');
+    if (prev.style.visibility !== 'hidden' && prev.href) window.location.href = prev.href;
+  } else if (e.key === 'ArrowRight') {
+    var next = el('btn-next');
+    if (next.style.visibility !== 'hidden' && next.href) window.location.href = next.href;
+  } else if (e.key === 'Backspace') {
+    var close = el('btn-close');
+    if (close.href) window.location.href = close.href;
+  }
+});
+
 // ── Recalc au resize ──────────────────────────────────────────
 window.addEventListener('resize', function() { if (natW) fit(); });
 </script>
