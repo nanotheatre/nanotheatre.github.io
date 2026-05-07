@@ -55,6 +55,20 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #ffffff; f
   gap: .5rem; color: #9b1c1c; font-size: 13px;
 }
 #btn-reset { display: none; }
+
+.nav-btn {
+  position: fixed; top: 50%; transform: translateY(-50%);
+  z-index: 10; text-decoration: none;
+  background: rgba(255,255,255,0.7); border: 1px solid #ddd;
+  border-radius: 50%; width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  color: #333; font-size: 18px; line-height: 1;
+  transition: background .15s, border-color .15s;
+  user-select: none;
+}
+.nav-btn:hover { background: rgba(255,255,255,0.95); border-color: #aaa; }
+#btn-prev { left: 12px; }
+#btn-next { right: 12px; }
 </style>
 </head>
 <body>
@@ -66,6 +80,8 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #ffffff; f
     <button class="tool-btn" id="btn-fit">Ajuster</button>
     <button class="tool-btn" id="btn-reset">1:1</button>
   </div>
+  <a class="nav-btn" id="btn-prev" href="#">&#8249;</a>
+  <a class="nav-btn" id="btn-next" href="#">&#8250;</a>
   <div id="content">
     <div id="img-wrap"><img id="img" src="" alt=""></div>
     <div id="error">Image introuvable ou URL manquante.</div>
@@ -104,20 +120,73 @@ function fit() {
   scale = fitScale(); panX = panY = 0; applyTransform();
 }
 
-// ── Init ──────────────────────────────────────────────────────
-var params = new URLSearchParams(window.location.search);
-var url    = params.get('url') || params.get('src') || params.get('img');
+// ── URL reconstruction ───────────────────────────────────────
+// Paramètre attendu : nom_du_depot/nom_du_fichier_sans_extension
+// Ex: CaCO3/CaCO3-020
+// → https://raw.githubusercontent.com/nanotheatre/CaCO3/main/artefacts/2000x2000/CaCO3-020.png
 
-if (!url) {
+var GITHUB_USER = 'nanotheatre';
+var GITHUB_SIZE = '2000x2000';
+var GITHUB_RAW  = 'https://raw.githubusercontent.com/' + GITHUB_USER;
+
+function buildUrl(ref) {
+  // ref = "depot/fichier_sans_ext"
+  var parts = ref.split('/');
+  var depot  = parts[0];
+  var file   = parts.slice(1).join('/');
+  return GITHUB_RAW + '/' + depot + '/main/artefacts/' + GITHUB_SIZE + '/' + file + '.png';
+}
+
+// Extrait le suffixe numérique d'un nom de fichier (ex: "CaCO3-020" → 20)
+function getNumSuffix(filename) {
+  var m = filename.match(/(\d+)$/);
+  return m ? { num: parseInt(m[1], 10), digits: m[1].length, prefix: filename.slice(0, filename.length - m[1].length) } : null;
+}
+
+function buildNavRef(depot, prefix, num, digits) {
+  if (num < 1) return null;
+  return depot + '/' + prefix + String(num).padStart(digits, '0');
+}
+
+// ── Init ──────────────────────────────────────────────────────
+var params  = new URLSearchParams(window.location.search);
+var ref     = params.get('ref') || params.get('url') || params.get('art') || params.get('src') || params.get('img');
+var currentUrl = null;
+
+if (!ref) {
   el('img-wrap').style.display = 'none';
   el('error').style.display = 'flex';
 } else {
-  var img = el('img');
-  // Titre = nom de fichier extrait de l'URL
-  try { el('img-title').textContent = decodeURIComponent(url.split('/').pop().split('?')[0]); }
-  catch(e) { el('img-title').textContent = url; }
+  // Si ref ressemble déjà à une URL complète, l'utiliser directement
+  if (ref.startsWith('http')) {
+    currentUrl = ref;
+  } else {
+    currentUrl = buildUrl(ref);
+  }
+
+  var refParts  = ref.startsWith('http') ? null : ref.split('/');
+  var refDepot  = refParts ? refParts[0] : null;
+  var refFile   = refParts ? refParts.slice(1).join('/') : null;
+  var numInfo   = refFile ? getNumSuffix(refFile) : null;
+
+  // Titre
+  try { el('img-title').textContent = decodeURIComponent(currentUrl.split('/').pop().split('?')[0]); }
+  catch(e) { el('img-title').textContent = currentUrl; }
   document.title = el('img-title').textContent;
 
+  // Navigation prev/next
+  if (numInfo) {
+    var prevRef = buildNavRef(refDepot, numInfo.prefix, numInfo.num - 1, numInfo.digits);
+    var nextRef = buildNavRef(refDepot, numInfo.prefix, numInfo.num + 1, numInfo.digits);
+    if (prevRef) el('btn-prev').href = '?ref=' + encodeURIComponent(prevRef);
+    else el('btn-prev').style.visibility = 'hidden';
+    el('btn-next').href = '?ref=' + encodeURIComponent(nextRef);
+  } else {
+    el('btn-prev').style.visibility = 'hidden';
+    el('btn-next').style.visibility = 'hidden';
+  }
+
+  var img = el('img');
   img.onload = function() {
     natW = img.naturalWidth;
     natH = img.naturalHeight;
@@ -127,9 +196,9 @@ if (!url) {
   img.onerror = function() {
     el('img-wrap').style.display = 'none';
     el('error').style.display = 'flex';
-    el('error').textContent = 'Impossible de charger : ' + url;
+    el('error').textContent = 'Impossible de charger : ' + currentUrl;
   };
-  img.src = url;
+  img.src = currentUrl;
 }
 
 function showHint() {
