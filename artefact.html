@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Viewer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #ffffff; font-family: 'Hanken Grotesk', sans-serif; }
+
+#viewer {
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column;
+}
+
+#toolbar {
+  flex-shrink: 0;
+  background: transparent; 
+  padding: .5rem 1rem;
+  display: flex; align-items: center; gap: .75rem;
+  font-size: 12px;
+  position: absolute;
+  right: 0; z-index: 2;
+}
+#img-title { display: none; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #ccc; font-size: 12px; }
+.tool-btn {
+  background: none; border: 1px solid #444; border-radius: 4px;
+  font-family: 'Hanken Grotesk', sans-serif;
+  font-size: 11px; padding: 4px 10px; cursor: pointer;
+  transition: background .1s; flex-shrink: 0;
+}
+.tool-btn:hover { background: #333; }
+#zoom-label { display: none; font-size: 11px; color: #9a9490; flex-shrink: 0; min-width: 44px; text-align: right; }
+
+#content {
+  flex: 1; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+}
+#img-wrap {
+  position: relative; transform-origin: center center; user-select: none;
+}
+#img-wrap img { display: block; max-width: none; }
+
+#hint {
+  position: absolute; bottom: 1rem; right: 1.5rem;
+  font-size: 11px; color: #9a9490;
+  pointer-events: none; transition: opacity .5s;
+}
+
+#error {
+  display: none; flex-direction: column; align-items: center;
+  gap: .5rem; color: #9b1c1c; font-size: 13px;
+}
+#btn-reset { display: none; }
+</style>
+</head>
+<body>
+
+<div id="viewer">
+  <div id="toolbar">
+    <span id="img-title">—</span>
+    <span id="zoom-label">100%</span>
+    <button class="tool-btn" id="btn-fit">Ajuster</button>
+    <button class="tool-btn" id="btn-reset">1:1</button>
+  </div>
+  <div id="content">
+    <div id="img-wrap"><img id="img" src="" alt=""></div>
+    <div id="error">Image introuvable ou URL manquante.</div>
+    <span id="hint">molette pour zoomer &middot; glisser pour déplacer</span>
+  </div>
+</div>
+
+<script>
+function el(id) { return document.getElementById(id); }
+
+var scale  = 1;
+var panX   = 0;
+var panY   = 0;
+var natW   = 0;
+var natH   = 0;
+var drag   = false;
+var dSX = 0, dSY = 0, dPX = 0, dPY = 0;
+var hintTmr = null;
+
+function fitScale() {
+  var c = el('content');
+  var cw = c.clientWidth  - 40;
+  var ch = c.clientHeight - 40;
+  if (!natW || !natH) return 1;
+  return Math.min(cw / natW, ch / natH, 1);
+}
+
+function applyTransform() {
+  var wrap = el('img-wrap');
+  wrap.style.transform = 'translate(' + panX + 'px,' + panY + 'px) scale(' + scale + ')';
+  wrap.style.cursor = scale > fitScale() + 0.001 ? 'grab' : 'default';
+  el('zoom-label').textContent = Math.round(scale * 100) + '%';
+}
+
+function fit() {
+  scale = fitScale(); panX = panY = 0; applyTransform();
+}
+
+// ── Init ──────────────────────────────────────────────────────
+var params = new URLSearchParams(window.location.search);
+var url    = params.get('url') || params.get('src') || params.get('img');
+
+if (!url) {
+  el('img-wrap').style.display = 'none';
+  el('error').style.display = 'flex';
+} else {
+  var img = el('img');
+  // Titre = nom de fichier extrait de l'URL
+  try { el('img-title').textContent = decodeURIComponent(url.split('/').pop().split('?')[0]); }
+  catch(e) { el('img-title').textContent = url; }
+  document.title = el('img-title').textContent;
+
+  img.onload = function() {
+    natW = img.naturalWidth;
+    natH = img.naturalHeight;
+    fit();
+    showHint();
+  };
+  img.onerror = function() {
+    el('img-wrap').style.display = 'none';
+    el('error').style.display = 'flex';
+    el('error').textContent = 'Impossible de charger : ' + url;
+  };
+  img.src = url;
+}
+
+function showHint() {
+  var h = el('hint');
+  h.style.opacity = '1';
+  if (hintTmr) clearTimeout(hintTmr);
+  hintTmr = setTimeout(function() { h.style.opacity = '0'; }, 2500);
+}
+
+// ── Zoom molette ──────────────────────────────────────────────
+el('content').addEventListener('wheel', function(e) {
+  e.preventDefault();
+  var delta = e.deltaY > 0 ? 0.9 : 1.1;
+  scale = Math.min(1.15, Math.max(0.1, scale * delta));
+  applyTransform();
+}, { passive: false });
+
+// ── Double-clic → fit ─────────────────────────────────────────
+el('content').addEventListener('dblclick', function() { fit(); });
+
+// ── Drag ──────────────────────────────────────────────────────
+el('content').addEventListener('mousedown', function(e) {
+  if (e.button !== 0) return;
+  if (scale <= fitScale() + 0.001) return;
+  drag = true; dSX = e.clientX; dSY = e.clientY; dPX = panX; dPY = panY;
+  el('img-wrap').style.cursor = 'grabbing';
+  e.preventDefault();
+});
+document.addEventListener('mousemove', function(e) {
+  if (!drag) return;
+  panX = dPX + (e.clientX - dSX);
+  panY = dPY + (e.clientY - dSY);
+  applyTransform();
+});
+document.addEventListener('mouseup', function() {
+  if (!drag) return; drag = false; applyTransform();
+});
+
+// ── Boutons ───────────────────────────────────────────────────
+el('btn-fit').addEventListener('click', function() { fit(); });
+el('btn-reset').addEventListener('click', function() { scale = 1; panX = panY = 0; applyTransform(); });
+
+// ── Recalc au resize ──────────────────────────────────────────
+window.addEventListener('resize', function() { if (natW) fit(); });
+</script>
+</body>
+</html>
