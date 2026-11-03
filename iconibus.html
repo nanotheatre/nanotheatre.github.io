@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Iconibus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #ffffff; font-family: 'Hanken Grotesk', sans-serif; }
+
+#viewer {
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column;
+}
+
+#toolbar {
+  flex-shrink: 0;
+  background: transparent;
+  padding: .5rem 1rem;
+  display: flex; align-items: center; gap: .75rem;
+  font-size: 12px;
+  position: absolute;
+  right: 0; z-index: 2;
+}
+#img-title { display: none; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #ccc; font-size: 12px; }
+.tool-btn {
+  background: none; border: 1px solid #444; border-radius: 4px;
+  font-family: 'Hanken Grotesk', sans-serif;
+  font-size: 11px; padding: 4px 10px; cursor: pointer;
+  transition: background .1s; flex-shrink: 0;
+}
+.tool-btn:hover { background: #333; }
+#zoom-label { display: none; font-size: 11px; color: #9a9490; flex-shrink: 0; min-width: 44px; text-align: right; }
+
+#content {
+  flex: 1; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+}
+#img-wrap {
+  position: relative; transform-origin: center center; user-select: none;
+}
+#img-wrap img { display: block; max-width: none; }
+
+#hint {
+  position: absolute; bottom: 1rem; right: 1.5rem;
+  font-size: 11px; color: #9a9490;
+  pointer-events: none; transition: opacity .5s;
+}
+
+#error {
+  display: none; flex-direction: column; align-items: center;
+  gap: .5rem; color: #9b1c1c; font-size: 13px;
+}
+#btn-reset, #btn-fit { display: none; }
+
+.nav-btn {
+  position: fixed; top: 50%; transform: translateY(-50%);
+  z-index: 10; text-decoration: none;
+  background: rgba(255,255,255,0.7); border: 1px solid #ddd;
+  border-radius: 50%; width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  color: #333; font-size: 18px; line-height: 1;
+  transition: background .15s, border-color .15s;
+  user-select: none;
+}
+.nav-btn:hover { background: rgba(255,255,255,0.95); border-color: #aaa; }
+#btn-prev { left: 12px; }
+#btn-next { right: 12px; }
+/* Flèches précédent/suivant masquées (navigation clavier ←/→ conservée) */
+.nav-btn { display: none; }
+
+/* ── Menu zoom / plein écran (haut gauche) ── */
+.d-flex { display: flex; }
+.flex-column { flex-direction: column; }
+.m-1 { margin: .25rem; }
+.menu-zoom {
+  position: fixed; top: 8px; left: 8px; z-index: 10;
+}
+.menu-zoom .btn {
+  width: 40px; height: 40px; padding: 0;
+  background-color: rgba(255,255,255,0.7);
+  background-repeat: no-repeat; background-position: center; background-size: 18px 18px;
+  border: 1px solid #ddd; border-radius: 50%;
+  cursor: pointer;
+  transition: background-color .15s, border-color .15s;
+}
+.menu-zoom .btn:hover { background-color: rgba(255,255,255,0.95); border-color: #aaa; }
+.menu-zoom .btn:disabled { opacity: .35; cursor: default; }
+#zoom-plus {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M12 5v14M5 12h14'/%3E%3C/svg%3E");
+}
+#zoom-moins {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M5 12h14'/%3E%3C/svg%3E");
+}
+#plein-ecran {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5'/%3E%3C/svg%3E");
+}
+#plein-ecran.actif {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5'/%3E%3C/svg%3E");
+}
+
+#btn-close {
+  position: fixed; top: 12px; right: 12px;
+  z-index: 10; text-decoration: none;
+  background: rgba(255,255,255,0.7); border: 1px solid #ddd;
+  border-radius: 50%; width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  color: #333; font-size: 18px; line-height: 1;
+  transition: background .15s, border-color .15s;
+  user-select: none;
+}
+#btn-close:hover { background: rgba(255,255,255,0.95); border-color: #aaa; }
+/* En plein écran : le bouton Fermer devient « Sortir du plein écran » */
+#btn-close .ico-exit-fs { display: none; width: 18px; height: 18px; }
+#btn-close.plein-ecran .ico-close { display: none; }
+#btn-close.plein-ecran .ico-exit-fs { display: block; }
+
+#loader {
+  position: fixed; inset: 0; z-index: 100;
+  background: #fff;
+  display: flex; align-items: center; justify-content: center;
+  transition: opacity .25s;
+}
+#loader.hidden { opacity: 0; pointer-events: none; }
+#loader::after {
+  content: '';
+  width: 24px; height: 24px;
+  border: 2px solid #ddd;
+  border-top-color: #999;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Cacher le viewer tant que l'image n'est pas prête */
+#viewer { opacity: 0; transition: opacity .2s; }
+#viewer.ready { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div id="loader"></div>
+<div id="viewer">
+  <div id="toolbar">
+    <span id="img-title">—</span>
+    <span id="zoom-label">100%</span>
+    <button class="tool-btn" id="btn-fit">Ajuster</button>
+    <button class="tool-btn" id="btn-reset">1:1</button>
+  </div>
+  <div class="menu-zoom d-flex flex-column">
+    <button type="button" id="zoom-plus" class="btn m-1" style="display: inline-block; position: relative; pointer-events: auto;" title="Zoom in"></button>
+    <button type="button" id="zoom-moins" class="btn m-1" style="display: inline-block; position: relative; pointer-events: auto;" title="Zoom out"></button>
+    <button type="button" id="plein-ecran" class="btn m-1" style="display: inline-block; position: relative; pointer-events: auto;" title="Toggle full page"></button>
+  </div>
+  <a id="btn-close" href="#" title="Retour"><span class="ico-close">&#x2715;</span><svg class="ico-exit-fs" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg></a>
+  <a class="nav-btn" id="btn-prev" href="#">&#8249;</a>
+  <a class="nav-btn" id="btn-next" href="#">&#8250;</a>
+  <div id="content">
+    <div id="img-wrap"><img id="img" src="" alt=""></div>
+    <div id="error">Image introuvable ou nom de fichier manquant.</div>
+    <span id="hint">molette pour zoomer &middot; glisser pour déplacer</span>
+  </div>
+</div>
+
+<script>
+function el(id) { return document.getElementById(id); }
+
+var scale  = 1;
+var panX   = 0;
+var panY   = 0;
+var natW   = 0;
+var natH   = 0;
+var drag   = false;
+var dSX = 0, dSY = 0, dPX = 0, dPY = 0;
+var hintTmr = null;
+
+function fitScale() {
+  var c = el('content');
+  var cw = c.clientWidth  - 40;
+  var ch = c.clientHeight - 40;
+  if (!natW || !natH) return 1;
+  return Math.min(cw / natW, ch / natH, 1);
+}
+
+function applyTransform() {
+  var wrap = el('img-wrap');
+  wrap.style.transform = 'translate(' + panX + 'px,' + panY + 'px) scale(' + scale + ')';
+  wrap.style.cursor = scale > fitScale() + 0.001 ? 'grab' : 'default';
+  el('zoom-label').textContent = Math.round(scale * 100) + '%';
+}
+
+function fit() {
+  scale = fitScale(); panX = panY = 0; applyTransform();
+}
+
+// ── Construction de l'URL ────────────────────────────────────
+// Paramètre attendu : nom de fichier, ex.
+//   ?art=Artificiosissimis-064-05_1500x1500.png
+// (l'extension .png et le suffixe de taille sont facultatifs :
+//  ?art=Artificiosissimis-064-05 → Artificiosissimis-064-05_1500x1500.png)
+// → https://raw.githubusercontent.com/nanotheatre/Iconibus-Artificiosissimis/refs/heads/main/Compositions/Artefacts/Artificiosissimis-064-05_1500x1500.png
+
+var GITHUB_USER  = 'nanotheatre';
+var GITHUB_DEPOT = 'Iconibus-Artificiosissimis';
+var DEFAULT_SIZE = '_1500x1500';
+var IMG_BASE     = 'https://raw.githubusercontent.com/' + GITHUB_USER + '/' + GITHUB_DEPOT +
+                   '/refs/heads/main/Compositions/Artefacts/';
+var REPO_URL     = 'https://github.com/' + GITHUB_USER + '/' + GITHUB_DEPOT;
+
+// Normalise le nom : retire l'extension, ajoute la taille par défaut si absente
+function normalize(name) {
+  name = name.trim().replace(/\.png$/i, '');
+  if (!/_\d+x\d+$/.test(name)) name += DEFAULT_SIZE;
+  return name;
+}
+
+function buildUrl(base) {
+  return IMG_BASE + base + '.png';
+}
+
+// Découpe "Artificiosissimis-064-05_1500x1500"
+// → { prefix: "Artificiosissimis-064-", num: 5, digits: 2, size: "_1500x1500" }
+// La navigation porte sur le dernier groupe numérique avant la taille (la variante).
+function getNumSuffix(base) {
+  var m = base.match(/^(.*?)(\d+)(_\d+x\d+)$/);
+  return m ? { prefix: m[1], num: parseInt(m[2], 10), digits: m[2].length, size: m[3] } : null;
+}
+
+function buildNavRef(info, num) {
+  if (num < 1) return null;
+  return info.prefix + String(num).padStart(info.digits, '0') + info.size + '.png';
+}
+
+// ── Init ──────────────────────────────────────────────────────
+// Paramètres lus dans la query (?art=…) ou, à défaut, dans le hash (#art=… ou #NomDuFichier),
+// certains navigateurs/lanceurs supprimant la query string sur file://
+var params = new URLSearchParams(window.location.search);
+var hashStr = decodeURIComponent(window.location.hash.replace(/^#/, ''));
+var hashParams = new URLSearchParams(hashStr.indexOf('=') > -1 ? hashStr : '');
+function getParam(k) { return params.get(k) || hashParams.get(k); }
+var ref = getParam('art') || getParam('img') || getParam('src') || getParam('url') ||
+          (hashStr && hashStr.indexOf('=') === -1 ? hashStr : null);
+var isLocal = window.location.protocol === 'file:';
+var currentUrl = null;
+
+// b = nombre de pages internes parcourues depuis la page liste
+var backSteps = parseInt(params.get('b') || '1', 10);
+if (isNaN(backSteps) || backSteps < 1) backSteps = 1;
+
+if (!ref) {
+  el('img-wrap').style.display = 'none';
+  el('error').innerHTML = 'Aucun nom de fichier reçu.<br><code style="font-size:11px;color:#555">iconibus.html?art=Artificiosissimis-064-05_1500x1500.png</code>';
+  el('error').style.display = 'flex';
+  el('btn-prev').style.visibility = 'hidden';
+  el('btn-next').style.visibility = 'hidden';
+  var ldr = el('loader'); ldr.classList.add('hidden'); ldr.style.display = 'none';
+  el('viewer').classList.add('ready');
+} else {
+  var refBase = normalize(ref);
+  var numInfo = getNumSuffix(refBase);
+
+  currentUrl = buildUrl(refBase);
+
+  document.title = 'Iconibus/' + refBase;
+  el('img-title').textContent = refBase;
+
+  // Bouton close → retour dans l'historique
+  el('btn-close').addEventListener('click', function(e) {
+    e.preventDefault();
+    if (isFullscreen()) toggleFullscreen();   // plein écran → on en sort
+    else window.history.go(-backSteps);       // sinon → retour
+  });
+
+  function navUrl(navRef) {
+    return '?art=' + encodeURIComponent(navRef) + '&b=' + (backSteps + 1);
+  }
+
+  if (numInfo) {
+    var prevRef = buildNavRef(numInfo, numInfo.num - 1);
+    var nextRef = buildNavRef(numInfo, numInfo.num + 1);
+    if (prevRef) el('btn-prev').href = navUrl(prevRef);
+    else el('btn-prev').style.visibility = 'hidden';
+    el('btn-next').href = navUrl(nextRef);
+  } else {
+    el('btn-prev').style.visibility = 'hidden';
+    el('btn-next').style.visibility = 'hidden';
+  }
+
+  var img = el('img');
+  img.onload = function() {
+    natW = img.naturalWidth;
+    natH = img.naturalHeight;
+    fit();
+    var loader = el('loader');
+    el('viewer').classList.add('ready');
+    loader.classList.add('hidden');
+    setTimeout(function() { loader.style.display = 'none'; }, 300);
+    showHint();
+  };
+  img.onerror = function() {
+    if (isLocal) {
+      // En local : afficher l'URL tentée plutôt que rediriger (diagnostic)
+      el('img-wrap').style.display = 'none';
+      el('error').innerHTML = 'Image introuvable :<br><code style="font-size:11px;color:#555">' + currentUrl + '</code>';
+      el('error').style.display = 'flex';
+      var ld = el('loader'); ld.classList.add('hidden'); ld.style.display = 'none';
+      el('viewer').classList.add('ready');
+    } else {
+      window.location.href = REPO_URL;
+    }
+  };
+  img.src = currentUrl;
+}
+
+function showHint() {
+  var h = el('hint');
+  h.style.opacity = '1';
+  if (hintTmr) clearTimeout(hintTmr);
+  hintTmr = setTimeout(function() { h.style.opacity = '0'; }, 2500);
+}
+
+// ── Zoom molette ──────────────────────────────────────────────
+el('content').addEventListener('wheel', function(e) {
+  e.preventDefault();
+  var delta = e.deltaY > 0 ? 0.9 : 1.1;
+  scale = Math.min(1.15, Math.max(0.1, scale * delta));
+  applyTransform();
+}, { passive: false });
+
+// ── Double-clic → fit ─────────────────────────────────────────
+el('content').addEventListener('dblclick', function() { fit(); });
+
+// ── Drag ──────────────────────────────────────────────────────
+el('content').addEventListener('mousedown', function(e) {
+  if (e.button !== 0) return;
+  if (scale <= fitScale() + 0.001) return;
+  drag = true; dSX = e.clientX; dSY = e.clientY; dPX = panX; dPY = panY;
+  el('img-wrap').style.cursor = 'grabbing';
+  e.preventDefault();
+});
+document.addEventListener('mousemove', function(e) {
+  if (!drag) return;
+  panX = dPX + (e.clientX - dSX);
+  panY = dPY + (e.clientY - dSY);
+  applyTransform();
+});
+document.addEventListener('mouseup', function() {
+  if (!drag) return; drag = false; applyTransform();
+});
+
+// ── Boutons ───────────────────────────────────────────────────
+el('btn-fit').addEventListener('click', function() { fit(); });
+el('btn-reset').addEventListener('click', function() { scale = 1; panX = panY = 0; applyTransform(); });
+
+// ── Menu zoom / plein écran ───────────────────────────────────
+var ZOOM_MIN = 0.1, ZOOM_MAX = 1.15, ZOOM_STEP = 1.25;
+
+function zoomBy(factor) {
+  if (!natW) return;
+  var s = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, scale * factor));
+  // Zoom centré sur le milieu de la vue : on ajuste le pan proportionnellement
+  panX = panX * (s / scale);
+  panY = panY * (s / scale);
+  scale = s;
+  // Revenu à l'échelle d'ajustement ou en dessous : recentrer
+  if (scale <= fitScale() + 0.001) { panX = panY = 0; }
+  applyTransform();
+}
+
+el('zoom-plus').addEventListener('click', function() { zoomBy(ZOOM_STEP); });
+el('zoom-moins').addEventListener('click', function() { zoomBy(1 / ZOOM_STEP); });
+
+function isFullscreen() {
+  return !!(document.fullscreenElement || document.webkitFullscreenElement);
+}
+function toggleFullscreen() {
+  var d = document.documentElement;
+  if (!isFullscreen()) {
+    if (d.requestFullscreen) d.requestFullscreen();
+    else if (d.webkitRequestFullscreen) d.webkitRequestFullscreen();
+  } else {
+    if (document.exitFullscreen) document.exitFullscreen();
+    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+  }
+}
+function onFullscreenChange() {
+  var fs = isFullscreen();
+  el('plein-ecran').classList.toggle('actif', fs);
+  el('btn-close').classList.toggle('plein-ecran', fs);
+  el('btn-close').title = fs ? 'Sortir du plein écran' : 'Retour';
+  if (natW) setTimeout(fit, 50);
+}
+el('plein-ecran').addEventListener('click', toggleFullscreen);
+document.addEventListener('fullscreenchange', onFullscreenChange);
+document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+
+// ── Navigation clavier ────────────────────────────────────────
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'ArrowLeft') {
+    var prev = el('btn-prev');
+    if (prev.style.visibility !== 'hidden' && prev.getAttribute('href') !== '#') window.location.href = prev.href;
+  } else if (e.key === 'ArrowRight') {
+    var next = el('btn-next');
+    if (next.style.visibility !== 'hidden' && next.getAttribute('href') !== '#') window.location.href = next.href;
+  } else if (e.key === 'Backspace') {
+    window.history.go(-backSteps);
+  }
+});
+
+// ── Recalc au resize ──────────────────────────────────────────
+window.addEventListener('resize', function() { if (natW) fit(); });
+</script>
+</body>
+</html>
