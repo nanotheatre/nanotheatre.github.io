@@ -186,18 +186,12 @@ function fit() {
   scale = fitScale(); panX = panY = 0; applyTransform();
 }
 
-// ── Construction de l'URL ────────────────────────────────────
-// Paramètre attendu : nom de fichier, ex.
-//   ?art=Artificiosissimis-064-05_1500x1500.png
-// (l'extension .png et le suffixe de taille sont facultatifs :
-//  ?art=Artificiosissimis-064-05 → Artificiosissimis-064-05_1500x1500.png)
-// → https://raw.githubusercontent.com/nanotheatre/Iconibus-Artificiosissimis/refs/heads/main/Compositions/Artefacts/Artificiosissimis-064-05_1500x1500.png
 
 var GITHUB_USER  = 'nanotheatre';
 var GITHUB_DEPOT = 'Iconibus-Artificiosissimis';
 var DEFAULT_SIZE = '_1500x1500';
 var IMG_BASE     = 'https://raw.githubusercontent.com/' + GITHUB_USER + '/' + GITHUB_DEPOT +
-                   '/refs/heads/main/Compositions/Artefacts/';
+                   '/refs/heads/main/Compos/Artefacts/';
 var REPO_URL     = 'https://github.com/' + GITHUB_USER + '/' + GITHUB_DEPOT;
 
 // Normalise le nom : retire l'extension, ajoute la taille par défaut si absente
