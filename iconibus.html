@@ -71,7 +71,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #ffffff; f
 .flex-column { flex-direction: column; }
 .m-1 { margin: .25rem; }
 .menu-zoom {
-  position: fixed; top: 8px; left: 8px; z-index: 10;
+  position: fixed; top: 8px; right: 8px; z-index: 10;
 }
 .menu-zoom .btn {
   width: 40px; height: 40px; padding: 0;
@@ -97,7 +97,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #ffffff; f
 }
 
 #btn-close {
-  position: fixed; top: 12px; right: 12px;
+  position: fixed; top: 12px; left: 12px;
   z-index: 10; text-decoration: none;
   background: rgba(255,255,255,0.7); border: 1px solid #ddd;
   border-radius: 50%; width: 40px; height: 40px;
@@ -107,10 +107,8 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #ffffff; f
   user-select: none;
 }
 #btn-close:hover { background: rgba(255,255,255,0.95); border-color: #aaa; }
-/* En plein écran : le bouton Fermer devient « Sortir du plein écran » */
-#btn-close .ico-exit-fs { display: none; width: 18px; height: 18px; }
-#btn-close.plein-ecran .ico-close { display: none; }
-#btn-close.plein-ecran .ico-exit-fs { display: block; }
+/* En plein écran : le bouton Fermer est masqué (sortie via le menu ou Échap) */
+#btn-close.plein-ecran { display: none; }
 
 #loader {
   position: fixed; inset: 0; z-index: 100;
@@ -145,11 +143,11 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #ffffff; f
     <button class="tool-btn" id="btn-reset">1:1</button>
   </div>
   <div class="menu-zoom d-flex flex-column">
+    <button type="button" id="plein-ecran" class="btn m-1" style="display: inline-block; position: relative; pointer-events: auto;" title="Toggle full page"></button>
     <button type="button" id="zoom-plus" class="btn m-1" style="display: inline-block; position: relative; pointer-events: auto;" title="Zoom in"></button>
     <button type="button" id="zoom-moins" class="btn m-1" style="display: inline-block; position: relative; pointer-events: auto;" title="Zoom out"></button>
-    <button type="button" id="plein-ecran" class="btn m-1" style="display: inline-block; position: relative; pointer-events: auto;" title="Toggle full page"></button>
   </div>
-  <a id="btn-close" href="#" title="Retour"><span class="ico-close">&#x2715;</span><svg class="ico-exit-fs" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg></a>
+  <a id="btn-close" href="#" title="Retour">&#x2715;</a>
   <a class="nav-btn" id="btn-prev" href="#">&#8249;</a>
   <a class="nav-btn" id="btn-next" href="#">&#8250;</a>
   <div id="content">
@@ -262,8 +260,7 @@ if (!ref) {
   // Bouton close → retour dans l'historique
   el('btn-close').addEventListener('click', function(e) {
     e.preventDefault();
-    if (isFullscreen()) toggleFullscreen();   // plein écran → on en sort
-    else window.history.go(-backSteps);       // sinon → retour
+    window.history.go(-backSteps);
   });
 
   function navUrl(navRef) {
@@ -375,7 +372,6 @@ function onFullscreenChange() {
   var fs = isFullscreen();
   el('plein-ecran').classList.toggle('actif', fs);
   el('btn-close').classList.toggle('plein-ecran', fs);
-  el('btn-close').title = fs ? 'Sortir du plein écran' : 'Retour';
   if (natW) setTimeout(fit, 50);
 }
 el('plein-ecran').addEventListener('click', toggleFullscreen);
