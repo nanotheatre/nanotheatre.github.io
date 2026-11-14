@@ -189,33 +189,47 @@ function fit() {
 
 var GITHUB_USER  = 'nanotheatre';
 var GITHUB_DEPOT = 'Iconibus-Artificiosissimis';
-var DEFAULT_SIZE = '_1500x1500';
+var GITHUB_BRANCH = 'main';
+var IMG_SUBDIR   = 'Figures';   // sous-dossier des images dans chaque série
+var IMG_PREFIX   = 'Figure-';
+var IMG_EXT      = '.png';
 var IMG_BASE     = 'https://raw.githubusercontent.com/' + GITHUB_USER + '/' + GITHUB_DEPOT +
-                   '/refs/heads/main/Compos/Artefacts/';
+                   '/refs/heads/' + GITHUB_BRANCH + '/';
 var REPO_URL     = 'https://github.com/' + GITHUB_USER + '/' + GITHUB_DEPOT;
 
-// Normalise le nom : retire l'extension, ajoute la taille par défaut si absente
-function normalize(name) {
-  name = name.trim().replace(/\.png$/i, '');
-  if (!/_\d+x\d+$/.test(name)) name += DEFAULT_SIZE;
-  return name;
+// Sommaire GitHub du dossier de la série : …/tree/main/Polytyq-01
+function folderUrl(info) {
+  var path = info.folder.split('/').map(encodeURIComponent).join('/');
+  return REPO_URL + '/tree/' + GITHUB_BRANCH + '/' + path;
+}
+var EXAMPLE_REF  = 'Polytyq-01/004';
+
+// Analyse la référence "Dossier/NNN" (sous-dossiers autorisés : "Serie/Polytyq-01/004").
+// Tolère "Dossier/Figure-004" et "Dossier/Figure-004.png".
+// → { folder: "Polytyq-01", num: 4, digits: 3 }  ou null si invalide
+function parseRef(ref) {
+  ref = ref.trim().replace(/^\/+|\/+$/g, '');
+  var m = ref.match(/^((?:[\w.\-]+\/)*[\w.\-]+)\/(?:Figure-)?(\d+)(?:\.png)?$/i);
+  if (!m) return null;
+  // Pas de remontée d'arborescence
+  if (m[1].split('/').some(function(s) { return s === '.' || s === '..'; })) return null;
+  return { folder: m[1], num: parseInt(m[2], 10), digits: m[2].length };
 }
 
-function buildUrl(base) {
-  return IMG_BASE + base + '.png';
+function numStr(info, num) {
+  return String(num).padStart(info.digits, '0');
 }
 
-// Découpe "Artificiosissimis-064-05_1500x1500"
-// → { prefix: "Artificiosissimis-064-", num: 5, digits: 2, size: "_1500x1500" }
-// La navigation porte sur le dernier groupe numérique avant la taille (la variante).
-function getNumSuffix(base) {
-  var m = base.match(/^(.*?)(\d+)(_\d+x\d+)$/);
-  return m ? { prefix: m[1], num: parseInt(m[2], 10), digits: m[2].length, size: m[3] } : null;
+// "Polytyq-01" + 4 → …/refs/heads/main/Polytyq-01/Figures/Figure-004.png
+function buildUrl(info, num) {
+  var path = info.folder.split('/').map(encodeURIComponent).join('/');
+  return IMG_BASE + path + '/' + IMG_SUBDIR + '/' + IMG_PREFIX + numStr(info, num) + IMG_EXT;
 }
 
+// Référence courte pour la navigation : "Polytyq-01/005"
 function buildNavRef(info, num) {
   if (num < 1) return null;
-  return info.prefix + String(num).padStart(info.digits, '0') + info.size + '.png';
+  return info.folder + '/' + numStr(info, num);
 }
 
 // ── Init ──────────────────────────────────────────────────────
@@ -234,22 +248,24 @@ var currentUrl = null;
 var backSteps = parseInt(params.get('b') || '1', 10);
 if (isNaN(backSteps) || backSteps < 1) backSteps = 1;
 
-if (!ref) {
+var numInfo = ref ? parseRef(ref) : null;
+
+if (!numInfo) {
   el('img-wrap').style.display = 'none';
-  el('error').innerHTML = 'Aucun nom de fichier reçu.<br><code style="font-size:11px;color:#555">iconibus.html?art=Artificiosissimis-064-05_1500x1500.png</code>';
+  el('error').innerHTML = (ref ? 'Référence invalide.' : 'Aucune référence reçue.') +
+    '<br><code style="font-size:11px;color:#555">iconibus.html?art=' + EXAMPLE_REF + '</code>';
   el('error').style.display = 'flex';
   el('btn-prev').style.visibility = 'hidden';
   el('btn-next').style.visibility = 'hidden';
   var ldr = el('loader'); ldr.classList.add('hidden'); ldr.style.display = 'none';
   el('viewer').classList.add('ready');
 } else {
-  var refBase = normalize(ref);
-  var numInfo = getNumSuffix(refBase);
+  var refLabel = numInfo.folder + '/' + IMG_PREFIX + numStr(numInfo, numInfo.num);
 
-  currentUrl = buildUrl(refBase);
+  currentUrl = buildUrl(numInfo, numInfo.num);
 
-  document.title = 'Iconibus/' + refBase;
-  el('img-title').textContent = refBase;
+  document.title = 'Iconibus/' + refLabel;
+  el('img-title').textContent = refLabel;
 
   // Bouton close → retour dans l'historique
   el('btn-close').addEventListener('click', function(e) {
@@ -258,19 +274,15 @@ if (!ref) {
   });
 
   function navUrl(navRef) {
-    return '?art=' + encodeURIComponent(navRef) + '&b=' + (backSteps + 1);
+    // "/" laissé lisible dans l'URL : ?art=Polytyq-01/005
+    return '?art=' + encodeURIComponent(navRef).replace(/%2F/g, '/') + '&b=' + (backSteps + 1);
   }
 
-  if (numInfo) {
-    var prevRef = buildNavRef(numInfo, numInfo.num - 1);
-    var nextRef = buildNavRef(numInfo, numInfo.num + 1);
-    if (prevRef) el('btn-prev').href = navUrl(prevRef);
-    else el('btn-prev').style.visibility = 'hidden';
-    el('btn-next').href = navUrl(nextRef);
-  } else {
-    el('btn-prev').style.visibility = 'hidden';
-    el('btn-next').style.visibility = 'hidden';
-  }
+  var prevRef = buildNavRef(numInfo, numInfo.num - 1);
+  var nextRef = buildNavRef(numInfo, numInfo.num + 1);
+  if (prevRef) el('btn-prev').href = navUrl(prevRef);
+  else el('btn-prev').style.visibility = 'hidden';
+  el('btn-next').href = navUrl(nextRef);
 
   var img = el('img');
   img.onload = function() {
@@ -292,7 +304,9 @@ if (!ref) {
       var ld = el('loader'); ld.classList.add('hidden'); ld.style.display = 'none';
       el('viewer').classList.add('ready');
     } else {
-      window.location.href = REPO_URL;
+      // Image absente → sommaire du dossier de la série.
+      // replace() : la page en erreur ne reste pas dans l'historique (évite la boucle au retour)
+      window.location.replace(folderUrl(numInfo));
     }
   };
   img.src = currentUrl;
