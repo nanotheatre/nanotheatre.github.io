@@ -197,6 +197,15 @@ var IMG_BASE     = 'https://raw.githubusercontent.com/' + GITHUB_USER + '/' + GI
                    '/refs/heads/' + GITHUB_BRANCH + '/';
 var REPO_URL     = 'https://github.com/' + GITHUB_USER + '/' + GITHUB_DEPOT;
 
+// Page .md de la figure sur GitHub : …/blob/main/Polyptyq-01/Figure-004.md
+// (numéro sur 3 chiffres minimum, comme gen_figures_md.py)
+var MD_MIN_DIGITS = 3;
+function mdUrl(info, num) {
+  var path = info.folder.split('/').map(encodeURIComponent).join('/');
+  var n = String(num).padStart(Math.max(MD_MIN_DIGITS, info.digits), '0');
+  return REPO_URL + '/blob/' + GITHUB_BRANCH + '/' + path + '/' + IMG_PREFIX + n + '.md';
+}
+
 // Sommaire GitHub du dossier de la série : …/tree/main/Polytyq-01
 function folderUrl(info) {
   var path = info.folder.split('/').map(encodeURIComponent).join('/');
@@ -244,9 +253,7 @@ var ref = getParam('art') || getParam('img') || getParam('src') || getParam('url
 var isLocal = window.location.protocol === 'file:';
 var currentUrl = null;
 
-// b = nombre de pages internes parcourues depuis la page liste
-var backSteps = parseInt(params.get('b') || '1', 10);
-if (isNaN(backSteps) || backSteps < 1) backSteps = 1;
+var closeUrl = REPO_URL;   // destination du bouton ✕ (et de Retour arrière)
 
 var numInfo = ref ? parseRef(ref) : null;
 
@@ -267,15 +274,12 @@ if (!numInfo) {
   document.title = 'Iconibus/' + refLabel;
   el('img-title').textContent = refLabel;
 
-  // Bouton close → retour dans l'historique
-  el('btn-close').addEventListener('click', function(e) {
-    e.preventDefault();
-    window.history.go(-backSteps);
-  });
+  // Bouton ✕ → page .md de la figure affichée
+  closeUrl = mdUrl(numInfo, numInfo.num);
 
   function navUrl(navRef) {
     // "/" laissé lisible dans l'URL : ?art=Polytyq-01/005
-    return '?art=' + encodeURIComponent(navRef).replace(/%2F/g, '/') + '&b=' + (backSteps + 1);
+    return '?art=' + encodeURIComponent(navRef).replace(/%2F/g, '/');
   }
 
   var prevRef = buildNavRef(numInfo, numInfo.num - 1);
@@ -311,6 +315,8 @@ if (!numInfo) {
   };
   img.src = currentUrl;
 }
+
+el('btn-close').href = closeUrl;
 
 // ── Zoom molette ──────────────────────────────────────────────
 el('content').addEventListener('wheel', function(e) {
@@ -395,7 +401,7 @@ document.addEventListener('keydown', function(e) {
     var next = el('btn-next');
     if (next.style.visibility !== 'hidden' && next.getAttribute('href') !== '#') window.location.href = next.href;
   } else if (e.key === 'Backspace') {
-    window.history.go(-backSteps);
+    window.location.href = closeUrl;
   }
 });
 
